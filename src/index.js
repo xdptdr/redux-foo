@@ -1,6 +1,7 @@
 import React from 'react'
 import { render } from 'react-dom'
-import { combineReducers, createStore } from 'redux'
+import { combineReducers, createStore, applyMiddleware } from 'redux'
+import thunkMiddleware from 'redux-thunk'
 import { Provider, connect } from 'react-redux'
 
 const reducer1 = (state = {counter:1}, action) => {
@@ -24,9 +25,18 @@ const reducers = combineReducers({
   reducer2
 })
 
-const store = createStore(reducers)
+const store = createStore(reducers, applyMiddleware(thunkMiddleware))
 
 const action = () => ({type: 'ACTION'})
+
+const actionT = function() {
+  return function(dispatch) {
+    dispatch(action())
+    return ()=>{
+      dispatch(action())
+    }
+  }
+}
 
 class MyButton extends React.Component {
   render() {
@@ -39,19 +49,31 @@ class MyButton extends React.Component {
 
 MyButton = connect()(MyButton)
 
+class MyOtherButton extends React.Component {
+  render() {
+    const {dispatch} = this.props;
+    return <button
+      onClick={()=>{dispatch(actionT())()}}
+    >MyOtherButton</button>
+  }
+}
+
+MyOtherButton = connect()(MyOtherButton)
+
 class MyStatus extends React.Component {
   constructor(props) {
     super(props);
     this.state={timerHandle:null}
   }
   componentDidMount() {
-    this.state.timerHandle=setInterval(()=>{
+    /*this.state.timerHandle=setInterval(()=>{
       this.props.onIncrement()
     }, 1000)
+    */
   }
   componentWillUnmount() {
-    clearInterval(this.state.timerHandle);
-    this.state.timerHandle=null;
+    /*clearInterval(this.state.timerHandle);
+    this.state.timerHandle=null;*/
   }
   render() {
     return <div>Status : {this.props.content}</div>
@@ -71,6 +93,7 @@ render(
   <Provider store={store}>
     <div>
       <MyButton />
+      <MyOtherButton />
       <MyConnectedStatus />
     </div>
   </Provider>,
